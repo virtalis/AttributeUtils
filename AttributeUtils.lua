@@ -9,6 +9,9 @@ local vrCreateNode = vrCreateNode
 local vrDeleteNode = vrDeleteNode
 local vrTreeRoot = vrTreeRoot
 
+-- Error message format strings
+local errFmtTooManyRows = "%s: Unable to create attribute table, too many properties. The maximum is 125 but %d were given"
+
 -- Utility used by the createAttributeTable functions
 -- Creates a new attribute table node of a given size
 -- If the right size metanode exists that is used, otherwise one is created.
@@ -65,6 +68,11 @@ string-indexed table to be consistent with the values returned by the other func
     }
 --]]
 local function createAttributeTableFromArray(parent, data)
+  if #data > 125 then
+    print(string.format(errFmtTooManyRows,"AttributeUtils.createAttributeTableFromArray",#data))
+    return
+  end
+  
   local propCount = #data * 2
 
   -- Check the data is present and has no duplicate keys
@@ -128,6 +136,11 @@ local function createAttributeTable(parent, data)
     data_arr[n] = k
     n=n+1
     data_arr[n] = v
+  end
+  
+  if n > 250 then
+    print(string.format(errFmtTooManyRows,"AttributeUtils.createAttributeTable",n/2))
+    return
   end
   
   local propCount = #data_arr

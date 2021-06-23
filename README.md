@@ -3,22 +3,22 @@
 This Lua plugin provides some helpful utility functions for interacting with Visionary Render's attribute table nodes.
 
 The underlying representation of attribute tables in Visionary Render introduces some complexity in using Lua to interact with them, including the following:
- - Each size of attribute table is represented by a different metanode in Visionary Render
- - Accessing an attribute table value without knowing its keys requires you to index the node properties directly
- - All values in attribute tables are stored as strings
+- Each size of attribute table is represented by a different metanode in Visionary Render
+- Accessing an attribute table value without knowing its keys requires you to index the node properties directly
+- All values in attribute tables are stored as strings
 
 This plugin provides the following utility functions to abstract away some of this complexity:
 
- - [getAttributeIterator](#getattributeiterator)
- - [getAllAttributes](#getallattributes)
- - [getAttribute](#getattribute)
- - [createAttributeTable](#createattributetable)
- - [createAttributeTableFromArray](#createattributetablefromarray)
+- [getAttributeIterator](#getattributeiterator)
+- [getAllAttributes](#getallattributes)
+- [getAttribute](#getattribute)
+- [createAttributeTable](#createattributetable)
+- [createAttributeTableFromArray](#createattributetablefromarray)
 
 It should be noted that all these functions impose an additional constraint that rows in the attribute table must have unique keys. This constraint isn't inherent to attribute tables but in order to provide a simpler interface it's recommended not to use duplicate keys. The functions in this plugin apply this constraint in the following ways:
- - The [getter functions](#getter-functions) will return the value from the first row with the given key if duplicates exist.
- - The [createAttributeTable](#createattributetable) function uses a Lua table so specifying duplicate keys is not possible.
- - The [createAttributeTableFromArray](#createattributetablefromarray) function will print a warning and take no action if duplicate keys are provided.
+- The [getter functions](#getter-functions) will return the value from the first row with the given key if duplicates exist.
+- The [createAttributeTable](#createattributetable) function uses a Lua table so specifying duplicate keys is not possible.
+- The [createAttributeTableFromArray](#createattributetablefromarray) function will print a warning and take no action if duplicate keys are provided.
 
 ## Getter functions
 
@@ -86,9 +86,9 @@ The optional argument `attPrefix` allows you to append a prefix to the keys in t
 ```
 
 Notes:
- - All values are stored as strings, this function doesn't attempt to convert them.
- - If the attribute table contains duplicate keys, the value in the *first* row for a given key is used.
- - This will print warnings when duplicate keys are found.
+- All values are stored as strings, this function doesn't attempt to convert them.
+- If the attribute table contains duplicate keys, the value in the *first* row for a given key is used.
+- This will print warnings when duplicate keys are found.
 
 ### getAttribute
 
@@ -112,12 +112,17 @@ print(AttributeUtils.getAttribute(attTbl,"key1"))
 Would output `value1`.
 
 Notes:
- - This function is equivalent to accessing the attribute table itself as if it were a Lua table e.g. `attTbl["key1"]`. However this function should be used where the key may not exist, as the `__index` override for attribute tables throws an error if the key isn't present.
- - All values are stored as strings, this function doesn't attempt to convert them.
- - If the attribute table contains duplicate keys, the value of the *first* row in the table which matches the given key is used.
- - This function exits as soon as the key is found, so no warnings are issued about duplicates.
+- This function is equivalent to accessing the attribute table itself as if it were a Lua table e.g. `attTbl["key1"]`. However this function should be used where the key may not exist, as the `__index` override for attribute tables throws an error if the key isn't present.
+- All values are stored as strings, this function doesn't attempt to convert them.
+- If the attribute table contains duplicate keys, the value of the *first* row in the table which matches the given key is used.
+- This function exits as soon as the key is found, so no warnings are issued about duplicates.
 
 ## Creation functions
+
+The maximum number of rows in any single attribute table is 125, and both [createAttributeTable](#createattributetable) and [createAttributeTableFromArray](#createattributetablefromarray) will print a warning and not create the table if given more data than this.
+
+However, the Visionary Render user interface automatically combines multiple attribute tables which are the child of the same node, so if you want to store and display more than 125 rows of data it's recommended to split your data into chunks of 125 rows or less, then use these functions to create an attribute table for each chunk.
+
 
 ### createAttributeTable
 
@@ -145,9 +150,10 @@ The following attribute table will be created:
 | key2 | value2 |
 
 Notes:
- - This function will create a new metanode if none exists for the attribute table of the size required to contain `data`
- - All keys and values in `data` will be converted to strings using `tostring`
- - Because the input to this is consistent with the format returned by [getAllAttributes](#getallattributes) it's recommended to use this function instead of [createAttributeTableFromArray](#createattributetablefromarray)
+- This function will create a new metanode if none exists for the attribute table of the size required to contain `data`
+- This function will print a warning and fail to create the node if given more than 125 rows of data
+- All keys and values in `data` will be converted to strings using `tostring`
+- Because the input to this is consistent with the format returned by [getAllAttributes](#getallattributes) it's recommended to use this function instead of [createAttributeTableFromArray](#createattributetablefromarray)
 
 ### createAttributeTableFromArray
 
@@ -187,5 +193,9 @@ The following attribute table will be created:
 | key2 | value2 |
 
 Notes:
- - This function will create a new metanode if none exists for the attribute table of the size required to contain `data`
- - All keys and values in `data` will be converted to strings using `tostring`
+- This function will create a new metanode if none exists for the attribute table of the size required to contain `data`
+- This function will print a warning and fail to create the node if the data is invalid in one of the following ways:
+  - Contains more than 125 rows of data
+  - Contains two rows with the same key
+  - Contains a row which doesn't contain a key and a value
+- All keys and values in `data` will be converted to strings using `tostring`
